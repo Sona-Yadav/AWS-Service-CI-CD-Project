@@ -1,0 +1,37 @@
+version: 0.2
+
+env:
+  parameter-store:
+    DOCKER_REGISTRY_USERNAME: /myapp/docker_credentials/username
+    DOCKER_REGISTRY_PASSWORD: /myapp/docker_credentials/password
+    DOCKER_REGISTRY_URL: /myapp/docker_credentials/docker_registry_url
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing dependencies..."
+
+  pre_build:
+    commands:
+      - echo "Installing Python dependencies..."
+      - pip install -r requirements.txt
+      - echo "Logging in to Docker registry..."
+      - docker login -u "$DOCKER_REGISTRY_USERNAME" -p "$DOCKER_REGISTRY_PASSWORD" "$DOCKER_REGISTRY_URL"
+
+  build:
+    commands:
+      - echo "Building the Docker image..."
+      - docker build -t "$DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/python-flask-project:latest" .
+
+  post_build:
+    commands:
+      - echo "Pushing the Docker image to the registry..."
+      - docker push "$DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/python-flask-project:latest"
+      - echo "Build and push completed successfully."
+
+artifacts:
+  files:
+    - "**/*"          # Upload all files in the project directory
+    - "!**/.git/**"   # Exclude Git metadata      
